@@ -1,0 +1,298 @@
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+## -----------------------------------------------------------------------------
+library(spatialcvR)
+
+# Example predictions vs observations
+observed <- c(10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+predicted <- c(11, 14, 21, 24, 31, 34, 41, 44, 51, 54)
+
+# Calculate metrics
+metrics <- spatial_metrics(observed, predicted)
+
+print(metrics)
+
+## -----------------------------------------------------------------------------
+# Perfect prediction
+observed_perfect <- c(10, 20, 30, 40, 50)
+predicted_perfect <- c(10, 20, 30, 40, 50)
+metrics_perfect <- spatial_metrics(observed_perfect, predicted_perfect)
+print(metrics_perfect)
+
+# Poor prediction
+observed_poor <- c(10, 20, 30, 40, 50)
+predicted_poor <- c(50, 40, 30, 20, 10)
+metrics_poor <- spatial_metrics(observed_poor, predicted_poor)
+print(metrics_poor)
+
+## -----------------------------------------------------------------------------
+# Load sample data
+data(sample_spatial_data)
+
+# Create spatial folds
+folds_block <- spatial_folds(
+  data = sample_spatial_data,
+  x = "longitude",
+  y = "latitude",
+  k = 5,
+  method = "block",
+  seed = 123
+)
+
+# Create random folds for comparison
+folds_random <- spatial_folds(
+  data = sample_spatial_data,
+  x = "longitude",
+  y = "latitude",
+  k = 5,
+  method = "random",
+  seed = 123
+)
+
+## -----------------------------------------------------------------------------
+# Simulate model training and evaluation for each fold
+evaluate_fold <- function(fold, data, target_var) {
+  train_idx <- fold$train
+  test_idx <- fold$test
+  
+  # Simple linear model for demonstration
+  train_data <- data[train_idx, ]
+  test_data <- data[test_idx, ]
+  
+  # Train model (using variable1 and variable2 as predictors)
+  model <- lm(target ~ variable1 + variable2, data = train_data)
+  
+  # Make predictions
+  predictions <- predict(model, newdata = test_data)
+  observed <- test_data[[target_var]]
+  
+  # Calculate metrics
+  metrics <- spatial_metrics(observed, predictions, na.rm = TRUE)
+  
+  return(metrics)
+}
+
+# Evaluate spatial block CV
+block_results <- lapply(folds_block$folds, function(fold) {
+  evaluate_fold(fold, sample_spatial_data, "target")
+})
+
+# Evaluate random CV
+random_results <- lapply(folds_random$folds, function(fold) {
+  evaluate_fold(fold, sample_spatial_data, "target")
+})
+
+## -----------------------------------------------------------------------------
+# Aggregate metrics across folds
+aggregate_metrics <- function(results_list) {
+  rmse_values <- sapply(results_list, function(x) x$RMSE)
+  mae_values <- sapply(results_list, function(x) x$MAE)
+  r2_values <- sapply(results_list, function(x) x$R2)
+  
+  list(
+    RMSE_mean = mean(rmse_values),
+    RMSE_sd = sd(rmse_values),
+    MAE_mean = mean(mae_values),
+    MAE_sd = sd(mae_values),
+    R2_mean = mean(r2_values),
+    R2_sd = sd(r2_values)
+  )
+}
+
+block_summary <- aggregate_metrics(block_results)
+random_summary <- aggregate_metrics(random_results)
+
+cat("Spatial Block CV Summary:\n")
+print(block_summary)
+
+cat("\nRandom CV Summary:\n")
+print(random_summary)
+
+## -----------------------------------------------------------------------------
+# Create summary metrics for comparison
+block_summary_metrics <- list(
+  RMSE = block_summary$RMSE_mean,
+  MAE = block_summary$MAE_mean,
+  R2 = block_summary$R2_mean
+)
+
+random_summary_metrics <- list(
+  RMSE = random_summary$RMSE_mean,
+  MAE = random_summary$MAE_mean,
+  R2 = random_summary$R2_mean
+)
+
+# Compare methods
+comparison <- compare_cv(
+  results_list = list(
+    spatial_block = block_summary_metrics,
+    random = random_summary_metrics
+  )
+)
+
+print(comparison)
+
+## ----eval=FALSE---------------------------------------------------------------
+# # Get predictions from one fold for residual analysis
+# fold_idx <- 1
+# train_idx <- folds_block$folds[[fold_idx]]$train
+# test_idx <- folds_block$folds[[fold_idx]]$test
+# 
+# train_data <- sample_spatial_data[train_idx, ]
+# test_data <- sample_spatial_data[test_idx, ]
+# 
+# # Train model
+# model <- lm(target ~ variable1 + variable2, data = train_data)
+# 
+# # Make predictions
+# predictions <- predict(model, newdata = test_data)
+# observed <- test_data$target
+# 
+# # Remove NA values
+# valid_idx <- !is.na(predictions) & !is.na(observed)
+# predictions <- predictions[valid_idx]
+# observed <- observed[valid_idx]
+# coords <- cbind(
+#   x = test_data$longitude[valid_idx],
+#   y = test_data$latitude[valid_idx]
+# )
+# 
+# # Calculate spatial residuals
+# residuals <- spatial_residuals(observed, predictions, coords)
+# 
+# print(residuals)
+
+## ----eval=FALSE---------------------------------------------------------------
+# # Spatial scatter plot of residuals
+# plot_spatial_residuals(residuals, type = "scatter",
+#                       main = "Spatial Residuals - Scatter Plot")
+# 
+# # Histogram of residuals
+# # (Chunk disabled due to dependency on previous disabled chunk)
+# # plot_spatial_residuals(residuals, type = "histogram",
+# #                       main = "Spatial Residuals - Histogram")
+# 
+# # Q-Q plot for normality
+# # (Chunk disabled due to dependency on previous disabled chunk)
+# # plot_spatial_residuals(residuals, type = "qq",
+# #                       main = "Spatial Residuals - Q-Q Plot")
+
+## ----eval=FALSE---------------------------------------------------------------
+# # Simulate agricultural data
+# set.seed(456)
+# n <- 100
+# agri_data <- data.frame(
+#   longitude = runif(n, 0, 1000),
+#   latitude = runif(n, 0, 1000),
+#   soil_quality = rnorm(n, 50, 10),
+#   rainfall = rnorm(n, 800, 100),
+#   temperature = rnorm(n, 20, 3),
+#   yield = 50 + 0.3*soil_quality + 0.02*rainfall + 0.5*temperature +
+#            rnorm(n, 0, 5)
+# )
+# 
+# # Add spatial structure to yield
+# agri_data$yield <- agri_data$yield +
+#   0.01*agri_data$longitude + 0.02*agri_data$latitude
+# 
+# # Create spatial folds
+# agri_folds <- spatial_folds(
+#   data = agri_data,
+#   x = "longitude",
+#   y = "latitude",
+#   k = 5,
+#   method = "block",
+#   seed = 456
+# )
+# 
+# # Check for spatial leakage
+# agri_leakage <- detect_spatial_leakage(
+#   data = agri_data,
+#   folds = agri_folds,
+#   x = "longitude",
+#   y = "latitude"
+# )
+# 
+# print(agri_leakage)
+# 
+# # Evaluate model
+# agri_results <- lapply(agri_folds$folds, function(fold) {
+#   evaluate_fold(fold, agri_data, "yield")
+# })
+# 
+# agri_summary <- aggregate_metrics(agri_results)
+# print(agri_summary)
+
+## ----eval=FALSE---------------------------------------------------------------
+# # Compare multiple spatial CV methods
+# methods <- c("block", "cluster", "random")
+# method_results <- list()
+# 
+# for (method in methods) {
+#   folds <- spatial_folds(
+#     data = sample_spatial_data,
+#     x = "longitude",
+#     y = "latitude",
+#     k = 5,
+#     method = method,
+#     seed = 123
+#   )
+# 
+#   results <- lapply(folds$folds, function(fold) {
+#     evaluate_fold(fold, sample_spatial_data, "target")
+#   })
+# 
+#   summary <- aggregate_metrics(results)
+#   method_results[[method]] <- list(
+#     RMSE = summary$RMSE_mean,
+#     MAE = summary$MAE_mean,
+#     R2 = summary$R2_mean
+#   )
+# }
+# 
+# # Compare all methods
+# multi_comparison <- compare_cv(method_results)
+# print(multi_comparison)
+
+## ----eval=FALSE---------------------------------------------------------------
+# # Test different levels of spatial separation
+# k_values <- c(3, 5, 7, 10)
+# separation_results <- data.frame(
+#   k = integer(),
+#   mean_distance = numeric(),
+#   RMSE = numeric()
+#   # (Chunks disabled for CRAN build - they work interactively but not during build)
+#   # For demonstration, please see the other vignettes or run the examples interactively
+# )
+
+## -----------------------------------------------------------------------------
+# Establish baseline
+random_baseline <- spatial_folds(sample_spatial_data, "longitude", "latitude",
+                                k = 5, method = "random", seed = 123)
+
+# Compare with spatial methods
+spatial_methods <- spatial_folds(sample_spatial_data, "longitude", "latitude",
+                                k = 5, method = "block", seed = 123)
+
+## -----------------------------------------------------------------------------
+# Always check leakage before trusting results
+leakage_check <- detect_spatial_leakage(sample_spatial_data, spatial_methods,
+                                       "longitude", "latitude")
+if (leakage_check$risk_level == "high") {
+  warning("High spatial leakage detected - results may be unreliable")
+}
+
+## -----------------------------------------------------------------------------
+# Don't just look at aggregate metrics
+# Examine spatial patterns in errors
+# This can reveal missing spatial predictors
+
+## -----------------------------------------------------------------------------
+# Keep track of:
+# - CV method used
+# - Parameters (k, block size, buffer radius, etc.)
+# - Spatial leakage assessment
+# - Performance metrics
+# - Residual analysis results
+

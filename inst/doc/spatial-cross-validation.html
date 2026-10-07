@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Mamadou SOW" />
+
+<meta name="date" content="2026-09-26" />
+
+<title>Spatial Cross-Validation Methods</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Spatial Cross-Validation Methods</h1>
+<h4 class="author">Mamadou SOW</h4>
+<h4 class="date">2026-09-26</h4>
+
+
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>This vignette demonstrates the different spatial cross-validation
+methods available in <code>spatialcvR</code> and when to use each
+approach.</p>
+</div>
+<div id="available-methods" class="section level2">
+<h2>Available Methods</h2>
+<p><code>spatialcvR</code> implements four main spatial cross-validation
+methods:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Spatial Block CV</strong>: Divide space into rectangular
+blocks</li>
+<li><strong>Buffered CV</strong>: Exclude training observations within a
+buffer radius</li>
+<li><strong>Spatial Clustering CV</strong>: Group observations spatially
+using clustering</li>
+<li><strong>Random Split</strong>: Baseline random CV for
+comparison</li>
+</ol>
+</div>
+<div id="setup" class="section level2">
+<h2>Setup</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(spatialcvR)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co"># Load sample data</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">data</span>(sample_spatial_data)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">head</span>(sample_spatial_data)</span></code></pre></div>
+<pre><code>##   id longitude latitude variable1 variable2    target
+## 1  1  287.5775 238.7260  86.36698  36.57333 110.40061
+## 2  2  788.3051 962.3589 102.53939  49.52156 143.78578
+## 3  3  408.9769 601.3657  67.79740  42.96299 101.66984
+## 4  4  883.0174 515.0297  99.58281  45.22016 123.82676
+## 5  5  940.4673 402.5733  92.87996  47.44277 129.43342
+## 6  6   45.5565 880.2465  47.51536  43.20302  86.62062</code></pre>
+</div>
+<div id="spatial-block-cross-validation" class="section level2">
+<h2>Spatial Block Cross-Validation</h2>
+<div id="concept" class="section level3">
+<h3>Concept</h3>
+<p>Spatial block CV divides the study area into a grid of rectangular
+blocks. Observations are assigned to folds based on which block they
+fall into. This ensures spatial separation between training and test
+sets.</p>
+</div>
+<div id="when-to-use" class="section level3">
+<h3>When to Use</h3>
+<ul>
+<li>Data with relatively uniform spatial distribution</li>
+<li>When you want to ensure geographic coverage</li>
+<li>When computational efficiency is important</li>
+<li>As a default spatial CV method</li>
+</ul>
+</div>
+<div id="basic-usage" class="section level3">
+<h3>Basic Usage</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Create spatial block folds</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>folds_block <span class="ot">&lt;-</span> <span class="fu">spatial_folds</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;block&quot;</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>)</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="fu">print</span>(folds_block)</span></code></pre></div>
+<pre><code>## Spatial Cross-Validation Folds
+## ==============================
+## Method: spatial_block 
+## Number of folds: 5 
+## Observations: 200 
+## CRS: Not defined 
+## Has duplicate coordinates: FALSE 
+## Seed: 123 
+## 
+## Fold sizes:
+##   Fold 1: 155 train, 45 test
+##   Fold 2: 150 train, 50 test
+##   Fold 3: 150 train, 50 test
+##   Fold 4: 168 train, 32 test
+##   Fold 5: 177 train, 23 test</code></pre>
+</div>
+<div id="controlling-block-size" class="section level3">
+<h3>Controlling Block Size</h3>
+<p>You can control the spatial resolution using either block size or
+number of blocks:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Specify block size</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>folds_block_size <span class="ot">&lt;-</span> <span class="fu">spatial_block_folds</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="at">block_size =</span> <span class="fu">c</span>(<span class="dv">200</span>, <span class="dv">200</span>),  <span class="co"># 200x200 unit blocks</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co"># Specify number of blocks</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>folds_n_blocks <span class="ot">&lt;-</span> <span class="fu">spatial_block_folds</span>(</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span>,</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  <span class="at">n_blocks =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">5</span>),  <span class="co"># 5x5 grid</span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="assignment-strategies" class="section level3">
+<h3>Assignment Strategies</h3>
+<p>Blocks can be assigned to folds using different strategies:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Systematic assignment (default)</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>folds_systematic <span class="ot">&lt;-</span> <span class="fu">spatial_block_folds</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">assignment =</span> <span class="st">&quot;systematic&quot;</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>)</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co"># Random assignment</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>folds_random_assign <span class="ot">&lt;-</span> <span class="fu">spatial_block_folds</span>(</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  <span class="at">assignment =</span> <span class="st">&quot;random&quot;</span>,</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+</div>
+<div id="buffered-cross-validation" class="section level2">
+<h2>Buffered Cross-Validation</h2>
+<div id="concept-1" class="section level3">
+<h3>Concept</h3>
+<p>Buffered CV ensures that for each test observation, no training
+observation falls within a specified buffer radius. This provides strict
+control over the minimum spatial separation.</p>
+</div>
+<div id="when-to-use-1" class="section level3">
+<h3>When to Use</h3>
+<ul>
+<li>When you need precise control over train/test distance</li>
+<li>For point-based data with irregular sampling</li>
+<li>When buffer distance has ecological/physical meaning</li>
+<li>For conservative performance estimates</li>
+</ul>
+</div>
+<div id="basic-usage-1" class="section level3">
+<h3>Basic Usage</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Create buffered folds</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>folds_buffer <span class="ot">&lt;-</span> <span class="fu">spatial_buffer_folds</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">buffer_radius =</span> <span class="dv">100</span>,  <span class="co"># 100 unit buffer</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="fu">print</span>(folds_buffer)</span></code></pre></div>
+<pre><code>## Spatial Cross-Validation Folds
+## ==============================
+## Method: spatial_buffer 
+## Number of folds: 5 
+## Observations: 
+## CRS:  
+## Has duplicate coordinates: 
+## 
+## Fold sizes:
+##   Fold 1: 160 train, 40 test
+##   Fold 2: 160 train, 40 test
+##   Fold 3: 160 train, 40 test
+##   Fold 4: 160 train, 40 test
+##   Fold 5: 160 train, 40 test</code></pre>
+</div>
+<div id="important-notes" class="section level3">
+<h3>Important Notes</h3>
+<ul>
+<li>Buffered CV requires a <strong>projected CRS</strong> for accurate
+distance calculations</li>
+<li>Using geographic coordinates (longitude/latitude) will produce
+approximate distances</li>
+<li>Larger buffer radii reduce the size of training sets</li>
+<li>This method is computationally more intensive than block CV</li>
+</ul>
+</div>
+</div>
+<div id="spatial-clustering-cross-validation" class="section level2">
+<h2>Spatial Clustering Cross-Validation</h2>
+<div id="concept-2" class="section level3">
+<h3>Concept</h3>
+<p>Spatial clustering CV groups spatially proximate observations using
+clustering algorithms (k-means), then assigns clusters to folds. This is
+useful for data with complex spatial structure.</p>
+</div>
+<div id="when-to-use-2" class="section level3">
+<h3>When to Use</h3>
+<ul>
+<li>Data with irregular or clustered spatial patterns</li>
+<li>When natural spatial groupings exist</li>
+<li>For heterogeneous spatial distributions</li>
+<li>When block boundaries would be arbitrary</li>
+</ul>
+</div>
+<div id="basic-usage-2" class="section level3">
+<h3>Basic Usage</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Create clustering folds</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>folds_cluster <span class="ot">&lt;-</span> <span class="fu">spatial_cluster_folds</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="at">n_clusters =</span> <span class="dv">10</span>,  <span class="co"># Number of spatial clusters</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>)</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="fu">print</span>(folds_cluster)</span></code></pre></div>
+<pre><code>## Spatial Cross-Validation Folds
+## ==============================
+## Method: spatial_cluster 
+## Number of folds: 5 
+## Observations: 
+## CRS:  
+## Has duplicate coordinates: 
+## 
+## Fold sizes:
+##   Fold 1: 143 train, 57 test
+##   Fold 2: 173 train, 27 test
+##   Fold 3: 161 train, 39 test
+##   Fold 4: 158 train, 42 test
+##   Fold 5: 165 train, 35 test</code></pre>
+</div>
+<div id="understanding-cluster-assignment" class="section level3">
+<h3>Understanding Cluster Assignment</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Examine cluster centers</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>folds_cluster<span class="sc">$</span>parameters<span class="sc">$</span>cluster_centers</span></code></pre></div>
+<pre><code>##    x_coords y_coords
+## 1  532.7197 565.9710
+## 2  887.9961 696.9285
+## 3  434.2980 318.7487
+## 4  233.6940 125.0067
+## 5  148.7116 397.2902
+## 6  608.2099 878.5329
+## 7  843.4232 400.2357
+## 8  886.7498 125.1667
+## 9  619.4220 116.1783
+## 10 235.5819 827.2978</code></pre>
+</div>
+</div>
+<div id="random-spatial-split-baseline" class="section level2">
+<h2>Random Spatial Split (Baseline)</h2>
+<div id="concept-3" class="section level3">
+<h3>Concept</h3>
+<p>Random spatial split performs standard random k-fold cross-validation
+without spatial constraints. This serves as a baseline to demonstrate
+the impact of spatial dependence.</p>
+</div>
+<div id="when-to-use-3" class="section level3">
+<h3>When to Use</h3>
+<ul>
+<li>As a baseline for comparison</li>
+<li>When spatial dependence is minimal</li>
+<li>For initial exploratory analysis</li>
+<li>To demonstrate the value of spatial CV</li>
+</ul>
+</div>
+<div id="basic-usage-3" class="section level3">
+<h3>Basic Usage</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Create random folds</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>folds_random <span class="ot">&lt;-</span> <span class="fu">spatial_split</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span>,</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>)</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="fu">print</span>(folds_random)</span></code></pre></div>
+<pre><code>## Spatial Cross-Validation Folds
+## ==============================
+## Method: random 
+## Number of folds: 5 
+## Observations: 
+## CRS:  
+## Has duplicate coordinates: 
+## 
+## Fold sizes:
+##   Fold 1: 160 train, 40 test
+##   Fold 2: 160 train, 40 test
+##   Fold 3: 160 train, 40 test
+##   Fold 4: 160 train, 40 test
+##   Fold 5: 160 train, 40 test</code></pre>
+</div>
+</div>
+<div id="choosing-the-right-method" class="section level2">
+<h2>Choosing the Right Method</h2>
+<div id="decision-flowchart" class="section level3">
+<h3>Decision Flowchart</h3>
+<ol style="list-style-type: decimal">
+<li><strong>Start with spatial block CV</strong> - Good default
+choice</li>
+<li><strong>Need precise distance control?</strong> → Use buffered
+CV</li>
+<li><strong>Complex spatial patterns?</strong> → Use clustering CV</li>
+<li><strong>Compare with random CV</strong> → Always include
+baseline</li>
+</ol>
+</div>
+<div id="method-comparison" class="section level3">
+<h3>Method Comparison</h3>
+<table>
+<colgroup>
+<col width="26%" />
+<col width="20%" />
+<col width="20%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Pros</th>
+<th>Cons</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Block CV</td>
+<td>Fast, intuitive, geographic coverage</td>
+<td>May split natural clusters</td>
+<td>Most cases</td>
+</tr>
+<tr class="even">
+<td>Buffered CV</td>
+<td>Precise distance control</td>
+<td>Computationally intensive</td>
+<td>Point data, strict requirements</td>
+</tr>
+<tr class="odd">
+<td>Clustering CV</td>
+<td>Handles complex patterns</td>
+<td>Sensitive to cluster parameters</td>
+<td>Heterogeneous data</td>
+</tr>
+<tr class="even">
+<td>Random CV</td>
+<td>Fast, baseline</td>
+<td>No spatial control</td>
+<td>Comparison, minimal spatial dependence</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="visualizing-folds" class="section level2">
+<h2>Visualizing Folds</h2>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Plot individual fold</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">plot_spatial_folds</span>(folds_block, sample_spatial_data, <span class="st">&quot;longitude&quot;</span>, <span class="st">&quot;latitude&quot;</span>, </span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>                   <span class="at">fold =</span> <span class="dv">1</span>, <span class="at">main =</span> <span class="st">&quot;Block CV - Fold 1&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Plot all folds</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">plot_spatial_folds</span>(folds_block, sample_spatial_data, <span class="st">&quot;longitude&quot;</span>, <span class="st">&quot;latitude&quot;</span>, </span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>                   <span class="at">fold =</span> <span class="st">&quot;all&quot;</span>, <span class="at">main =</span> <span class="st">&quot;Block CV - All Folds&quot;</span>)</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+</div>
+<div id="practical-tips" class="section level2">
+<h2>Practical Tips</h2>
+<div id="start-simple" class="section level3">
+<h3>Start Simple</h3>
+<p>Begin with spatial block CV using default parameters:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Default spatial block CV</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>folds_default <span class="ot">&lt;-</span> <span class="fu">spatial_folds</span>(</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  <span class="at">data =</span> sample_spatial_data,</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">&quot;longitude&quot;</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">&quot;latitude&quot;</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">5</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="adjust-based-on-data-characteristics" class="section level3">
+<h3>Adjust Based on Data Characteristics</h3>
+<ul>
+<li><strong>Dense data</strong>: Use larger blocks or more clusters</li>
+<li><strong>Sparse data</strong>: Use smaller blocks or fewer
+clusters</li>
+<li><strong>Strong spatial patterns</strong>: Consider clustering
+CV</li>
+<li><strong>Precise distance requirements</strong>: Use buffered CV</li>
+</ul>
+</div>
+<div id="always-compare-with-random-cv" class="section level3">
+<h3>Always Compare with Random CV</h3>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="co"># Compare spatial vs random</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>folds_spatial <span class="ot">&lt;-</span> <span class="fu">spatial_folds</span>(sample_spatial_data, <span class="st">&quot;longitude&quot;</span>, <span class="st">&quot;latitude&quot;</span>, </span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>                               <span class="at">k =</span> <span class="dv">5</span>, <span class="at">method =</span> <span class="st">&quot;block&quot;</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>folds_random <span class="ot">&lt;-</span> <span class="fu">spatial_folds</span>(sample_spatial_data, <span class="st">&quot;longitude&quot;</span>, <span class="st">&quot;latitude&quot;</span>, </span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>                             <span class="at">k =</span> <span class="dv">5</span>, <span class="at">method =</span> <span class="st">&quot;random&quot;</span>, <span class="at">seed =</span> <span class="dv">123</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="co"># Analyze spatial leakage for both</span></span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a>leakage_spatial <span class="ot">&lt;-</span> <span class="fu">detect_spatial_leakage</span>(sample_spatial_data, folds_spatial, </span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a>                                           <span class="st">&quot;longitude&quot;</span>, <span class="st">&quot;latitude&quot;</span>)</span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a>leakage_random <span class="ot">&lt;-</span> <span class="fu">detect_spatial_leakage</span>(sample_spatial_data, folds_random, </span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a>                                          <span class="st">&quot;longitude&quot;</span>, <span class="st">&quot;latitude&quot;</span>)</span>
+<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" tabindex="-1"></a><span class="fu">print</span>(leakage_spatial)</span></code></pre></div>
+<pre><code>## Spatial Leakage Detection
+## =========================
+## Method: spatial_block 
+## Overall Risk Level: LOW 
+## Distance Threshold: 53.04 
+## 
+## Summary Statistics:
+##   Min distance: 11.24
+##   Mean distance: 521.24
+##   Median distance: 530.91
+##   Proportion below threshold: 0.1%
+## 
+## Fold Analysis:
+##   Fold 1: LOW risk (0.1% below threshold)
+##   Fold 2: LOW risk (0.0% below threshold)
+##   Fold 3: LOW risk (0.1% below threshold)
+##   Fold 4: LOW risk (0.2% below threshold)
+##   Fold 5: LOW risk (0.1% below threshold)
+## 
+## Recommendations:
+##   - Spatial separation appears adequate. 
+##   - Current cross-validation setup should provide reliable performance estimates. 
+##   - Consider increasing spatial separation if you need more conservative estimates.</code></pre>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">print</span>(leakage_random)</span></code></pre></div>
+<pre><code>## Spatial Leakage Detection
+## =========================
+## Method: random 
+## Overall Risk Level: LOW 
+## Distance Threshold: 51.27 
+## 
+## Summary Statistics:
+##   Min distance: 2.21
+##   Mean distance: 512.67
+##   Median distance: 504.43
+##   Proportion below threshold: 0.8%
+## 
+## Fold Analysis:
+##   Fold 1: LOW risk (0.7% below threshold)
+##   Fold 2: LOW risk (0.8% below threshold)
+##   Fold 3: LOW risk (0.8% below threshold)
+##   Fold 4: LOW risk (0.7% below threshold)
+##   Fold 5: LOW risk (0.8% below threshold)
+## 
+## Recommendations:
+##   - Spatial separation appears adequate. 
+##   - Current cross-validation setup should provide reliable performance estimates. 
+##   - Consider increasing spatial separation if you need more conservative estimates.</code></pre>
+</div>
+</div>
+<div id="common-issues-and-solutions" class="section level2">
+<h2>Common Issues and Solutions</h2>
+<div id="issue-too-few-observations-per-fold" class="section level3">
+<h3>Issue: Too few observations per fold</h3>
+<p><strong>Solution</strong>: Reduce k or use fewer blocks/clusters</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="co"># Reduce number of folds</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>folds_k3 <span class="ot">&lt;-</span> <span class="fu">spatial_folds</span>(sample_spatial_data, <span class="st">&quot;longitude&quot;</span>, <span class="st">&quot;latitude&quot;</span>, <span class="at">k =</span> <span class="dv">3</span>)</span></code></pre></div>
+</div>
+<div id="issue-uneven-fold-sizes" class="section level3">
+<h3>Issue: Uneven fold sizes</h3>
+<p><strong>Solution</strong>: This is normal for spatial methods;
+consider using stratified approaches if class imbalance is severe</p>
+</div>
+<div id="issue-geographic-gaps-in-training-data" class="section level3">
+<h3>Issue: Geographic gaps in training data</h3>
+<p><strong>Solution</strong>: Increase block size or number of clusters
+to improve coverage</p>
+</div>
+</div>
+<div id="next-steps" class="section level2">
+<h2>Next Steps</h2>
+<ul>
+<li>Learn about <a href="spatial-leakage.html">spatial leakage
+detection</a></li>
+<li>Explore <a href="model-evaluation.html">model evaluation and
+comparison</a></li>
+</ul>
+</div>
+<div id="key-takeaways" class="section level2">
+<h2>Key Takeaways</h2>
+<ol style="list-style-type: decimal">
+<li><strong>Spatial block CV</strong> is a good default method for most
+cases</li>
+<li><strong>Buffered CV</strong> provides precise distance control when
+needed</li>
+<li><strong>Clustering CV</strong> handles complex spatial patterns</li>
+<li><strong>Always compare</strong> with random CV to assess spatial
+dependence impact</li>
+<li><strong>Visualize folds</strong> to understand spatial
+separation</li>
+</ol>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
